@@ -16,8 +16,11 @@ using namespace std;
 #include <deque>
 #include <array>
 #include <list>
+#include <map>
+#include <utility>
+#include <forward_list>
 
-class Timer{
+class Timer{ //класс таймаре
 private:
   chrono::time_point<chrono::steady_clock> start_point;
   chrono::time_point<chrono::steady_clock> stop_point;
@@ -39,8 +42,9 @@ public:
 };
 
 
-class Tester{
+class Tester{ //класс тестировщика
 private:
+  vector<pair<string,int>> table;
   Timer timer;
   vector<int> data;
   chrono::steady_clock::duration sort_inside_result;
@@ -54,10 +58,10 @@ public:
   }
 
   template <typename T>
-  void outside_test(T& container){
+  void outside_test(T& container,string name="None"){
     auto start=begin(container);
     auto finish=end(container);
-    assert (container.size()==data.size());
+    // assert (container.size()==data.size());
     for(auto elem:data){
       *start=elem;
       start++;
@@ -65,14 +69,15 @@ public:
     timer.start();
     sort(begin(container),end(container));
     timer.stop();
-    cout<<"sort_outside_result="<<timer.get()<<endl;
+    cout<<name+"_sort_outside_result="<<timer.get()<<endl;
+    table.push_back(pair<string,int>(name+"(outside)",timer.get()));
 
   }
   template<typename T>
-  void inside_test(T& container){
+  void inside_test(T& container,string name="None"){
     auto start=begin(container);
     auto finish=end(container);
-    assert (container.size()==data.size());
+    // assert (container.size()==data.size());
     for(auto elem:data){
       *start=elem;
       start++;
@@ -80,7 +85,8 @@ public:
     timer.start();
     container.sort();
     timer.stop();
-    cout<<"sort_inside_result="<<timer.get()<<endl;
+    cout<<name+"_sort_inside_result="<<timer.get()<<endl;
+    table.push_back(pair<string,int>(name+"(inside)",timer.get()));
   }
 
 
@@ -90,7 +96,19 @@ public:
     }
   }
 
+  auto get_table()const{
+    return table;
+  }
+
 };
+
+
+bool pair_cmp(pair<string,int> rhs, pair<string,int> lhs){ // компаратор для упорядочивания таблицы резульаттов
+  if (lhs.second<rhs.second){
+    return true;
+  }
+  return false;
+}
 
 
 int main(){
@@ -104,33 +122,38 @@ int main(){
 
 
 
-
+//outside- сортировка внешней функцией std::sort
+//inside- сортировка внутренней функцией sort
 
   Tester tester1(N);
+cout<<"Результат в милисекундах\n";
+  {
+    vector<int> vec(N);
+    tester1.outside_test(vec,"vector");
+  }
+  {
+    deque<int> dec(N);
+    tester1.outside_test(dec,"deque");
+  }
+  {
+    std::array<int,N> arr;
+    tester1.outside_test(arr,"array");
+  }
+  {
+    list<int> lst(N);
+    tester1.inside_test(lst,"list");
+  }
+  {
+    forward_list<int> f_lst(N);
+    tester1.inside_test(f_lst,"forward_list");
+  }
 
-  {
-    cout<<"vector\n";
-  vector<int> vec(N);
-  tester1.outside_test(vec);
-  // tester1.inside_test(vec);
-  }
-  {
-    cout<<"\ndeque\n";
-  deque<int> dec(N);
-  tester1.outside_test(dec);
-  // tester1.inside_test(dec);
-  }
-  {
-    cout<<"\narray\n";
-  std::array<int,N> arr;
-  tester1.outside_test(arr);
-  // tester1.inside_test(arr);
-  }
-  {
-    cout<<"\nlist\n";
-  list<int> lst(N);
-  // tester1.outside_test(arr);
-  tester1.inside_test(lst);
+
+  cout<<"\n\nОтсортированный результат\n";
+  auto table=tester1.get_table();
+  sort(table.begin(),table.end(),pair_cmp);
+  for(auto elem: table){
+    cout<<elem.first<<"="<<elem.second<<endl;
   }
 
 
